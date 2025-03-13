@@ -20,5 +20,5 @@ Develop a video displayer which can applydifferent filters to the original video
 
 代码 + 数据 + 实验报告
 
-![alt text](image-1.png)
-![alt text](image-2.png)
+![alt text](img/image-1.png)
+![alt text](img/image-2.png)
