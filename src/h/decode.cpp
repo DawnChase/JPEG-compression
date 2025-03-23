@@ -18,11 +18,11 @@ void IDCT(double *Matrix, int height, int width);
 // 6. IDCT
 // 7. upsample
 // 8. YUV -> RGB
-void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader *InfoHeader)
+void Decompress(string FileName, string OutputFileName)
 {
     // open input file
     int height, width;
-    FILE *fp = fopen(FileName, "rb");
+    FILE *fp = fopen(FileName.c_str(), "rb");
     if (fp == NULL)
     {
         printf("Error: cannot open input file! \n");
@@ -30,8 +30,8 @@ void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader 
     }
     fread(&height, sizeof(int), 1, fp);
     fread(&width, sizeof(int), 1, fp);
-    printf("Height: %d\n", height);
-    printf("Width: %d\n", width);
+    // printf("Height: %d\n", height);
+    // printf("Width: %d\n", width);
     // read DHT + ~Huffman
     vector <pair<int, int> > DPCM_Y, DPCM_UV;
     vector <pair<int, int> > RLE_Y, RLE_UV;
@@ -47,7 +47,7 @@ void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader 
     ReverseRLE(RLE_Y, AC_Y, height, width);
     ReverseRLE(RLE_UV, AC_U, height / 2, width / 2);
     ReverseRLE(RLE_UV, AC_V, height / 2, width / 2);
-        print("decode~RLE.test", AC_Y, AC_U, AC_V, height, width, 1);
+        // print("decode~RLE.test", AC_Y, AC_U, AC_V, height, width, 1);
     // ~DPCM
     printf("~DPCM processing... \n");
     int *DC_Y = (int *)malloc(sizeof(int) * height * width / (N * N));
@@ -56,7 +56,7 @@ void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader 
     ReverseDPCM(DPCM_Y, DC_Y, height, width);
     ReverseDPCM(DPCM_UV, DC_U, height / 2, width / 2);
     ReverseDPCM(DPCM_UV, DC_V, height / 2, width / 2);
-        print("decode~DPCM.test", DC_Y, DC_U, DC_V, height / N, width / N, 1);
+        // print("decode~DPCM.test", DC_Y, DC_U, DC_V, height / N, width / N, 1);
     // AC + DC -> Q
     printf("AC + DC -> Q processing... \n");
     int *Q_Y = (int *)malloc(sizeof(int) * height * width);
@@ -68,7 +68,7 @@ void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader 
     free(DC_Y); free(AC_Y);
     free(DC_U); free(AC_U);
     free(DC_V); free(AC_V);
-        print("decodeQ.test", Q_Y, Q_U, Q_V, height, width, 1);
+        // print("decodeQ.test", Q_Y, Q_U, Q_V, height, width, 1);
     // ~zigzag
     printf("~Zigzag scan processing... \n");
     ReverseZigzagScan(Q_Y, height, width);
@@ -111,6 +111,7 @@ void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader 
     unsigned char *Info = (unsigned char *)malloc(sizeof(unsigned char) * height * width * 3);
     TransformYUVToRGB(Info, Y, U, V, height, width);
     // write to output file
+    BMPInfoHeader *InfoHeader = setInfoHeader(height, width);
     PrintBMP(OutputFileName, Info, InfoHeader);
     free(Y); free(U); free(V);
     free(Info);

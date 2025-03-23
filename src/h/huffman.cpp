@@ -108,9 +108,9 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
     }
     for (int i = 0; i < v.size(); i ++)
         dht.HUFFVAL[i] = v[i].second;
-    for (int i = 0; i < v.size(); i ++)
-        printf("(%d,%d)", v[i].second, CanonicalCodes[v[i].second]);
-    printf("\n");
+    // for (int i = 0; i < v.size(); i ++)
+    //     printf("(%d,%d)", v[i].second, CanonicalCodes[v[i].second]);
+    // printf("\n");
     // get Huffman codes
     // concat 8 bits as a byte
     int bitCount = 0, bytes = 0;
@@ -166,7 +166,7 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
         //     printf("%x\n", byte[i]);
         fwrite(&byte[i], sizeof(unsigned char), 1, fp);
     }
-    printf("%ld\n", byte.size());
+    // printf("%ld\n", byte.size());
 }
 
 void reconstructHuffman(HuffmanNode *&root, unsigned char *BITS, int *HUFFVAL)
@@ -194,10 +194,10 @@ void reconstructHuffman(HuffmanNode *&root, unsigned char *BITS, int *HUFFVAL)
                     p = p -> left;
                 }
             p -> symbol = HUFFVAL[cnt ++];
-            printf("(%d,%d)", p -> symbol, code - 1);
+            // printf("(%d,%d)", p -> symbol, code - 1);
         }
         if (cnt > 0)
             code = code << 1;
     }
-    printf("\n");
+    // printf("\n");
 }

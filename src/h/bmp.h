@@ -6,9 +6,12 @@
 #include "head.h"
 
 //读入BMP文件
-unsigned char *ReadBMP(const char* FileName, BMPInfoHeader *InfoHeader);
+unsigned char *ReadBMP(string FileName, BMPInfoHeader *InfoHeader);
+
+// set BMP file header
+BMPInfoHeader *setInfoHeader(int height, int width);
 
 //print BMP file
-void PrintBMP(const char *FileName, unsigned char *Info, BMPInfoHeader *InfoHeader);
+void PrintBMP(string FileName, unsigned char *Info, BMPInfoHeader *InfoHeader);
 
 #endif

@@ -9,7 +9,7 @@
 #define N 8
 #define Pi 3.14159265358979323846
 
-void Decompress(const char *FileName, const char *OutputFileName, BMPInfoHeader *InfoHeader);
+void Decompress(string FileName, string OutputFileName);
 
 #endif
 

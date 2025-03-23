@@ -1,10 +1,10 @@
 #include "bmp.h"
 
-unsigned char *ReadBMP(const char* FileName, BMPInfoHeader *InfoHeader)
+unsigned char *ReadBMP(string FileName, BMPInfoHeader *InfoHeader)
 {
 	BMPFileHeader FileHeader;
 	FILE *fp;
-	if (!(fp = fopen(FileName, "rb")))
+	if (!(fp = fopen(FileName.c_str(), "rb")))
 	{
 		printf("Input File Open unsucceeded!\n");
 		return 0;
@@ -27,15 +27,43 @@ unsigned char *ReadBMP(const char* FileName, BMPInfoHeader *InfoHeader)
 	}
 	fclose(fp);
 	InfoHeader -> biSizeImage = len;	//update the contents of the InfoHeader
+	// print all the elements of the InfoHeader
+	// printf("biSize: %d\n", InfoHeader -> biSize);
+	// printf("biWidth: %d\n", InfoHeader -> biWidth);
+	// printf("biHeight: %d\n", InfoHeader -> biHeight);
+	// printf("biPlanes: %d\n", InfoHeader -> biPlanes);
+	// printf("biBitCount: %d\n", InfoHeader -> biBitCount);
+	// printf("biCompression: %d\n", InfoHeader -> biCompression);
+	// printf("biSizeImage: %d\n", InfoHeader -> biSizeImage);
+	// printf("biXPelsPerMeter: %d\n", InfoHeader -> biXPelsPerMeter);
+	// printf("biYPelsPerMeter: %d\n", InfoHeader -> biYPelsPerMeter);
+	// printf("biClrUsed: %d\n", InfoHeader -> biClrUsed);
+	// printf("biClrImportant: %d\n", InfoHeader -> biClrImportant);
 	return Info;
 }
 
+BMPInfoHeader *setInfoHeader(int height, int width)
+{
+	BMPInfoHeader *InfoHeader = (BMPInfoHeader *)malloc(sizeof(BMPInfoHeader));
+	InfoHeader -> biSize = sizeof(BMPInfoHeader);
+	InfoHeader -> biWidth = width;
+	InfoHeader -> biHeight = height;
+	InfoHeader -> biPlanes = 1;
+	InfoHeader -> biBitCount = 24;
+	InfoHeader -> biCompression = 0;
+	InfoHeader -> biSizeImage = width * height * 3;
+	InfoHeader -> biXPelsPerMeter = 2834;
+	InfoHeader -> biYPelsPerMeter = 2834;
+	InfoHeader -> biClrUsed = 0;
+	InfoHeader -> biClrImportant = 0;
+	return InfoHeader;
+}
 
-void PrintBMP(const char *FileName, unsigned char *Info, BMPInfoHeader *InfoHeader)
+void PrintBMP(string FileName, unsigned char *Info, BMPInfoHeader *InfoHeader)
 {
 	BMPFileHeader FileHeader;
 	FILE *fp;
-	if (!(fp = fopen(FileName,"wb")))
+	if (!(fp = fopen(FileName.c_str(),"wb")))
 	{
 		printf("Output File Open unsucceeded!\n");
 		return ;

@@ -8,6 +8,6 @@
 #define N 8
 #define Pi 3.14159265358979323846
 
-void Compress(unsigned char *Info, BMPInfoHeader *InfoHeader);
+void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader);
 
 #endif

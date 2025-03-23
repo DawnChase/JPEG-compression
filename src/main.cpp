@@ -4,14 +4,12 @@
 #include "h/decode.h"
 #include "h/encode.h"
 
-BMPInfoHeader InfoHeader;
-unsigned char *Info; 
 int Menu;
 
 int main()
 {
 	PrintMenu();
-	scanf("%d", &Menu);
+	cin >> Menu;
 	while (Menu != 7)
 	{
 		switch (Menu)
@@ -19,8 +17,10 @@ int main()
 			case 1: 	// read BMP file
 			{
 				printf("Please input the BMP file name.\n");
-				char FileName[100];
-				scanf("%s", FileName);
+				string FileName;
+				BMPInfoHeader InfoHeader;
+				unsigned char *Info; 
+				cin >> FileName;
 				if (!(Info = ReadBMP(FileName, &InfoHeader)))
 				{
 					printf("Please try again.\n");	
@@ -33,41 +33,43 @@ int main()
 			}
 			case 2:		// print BMP file
 			{
-				if (!Info)
-				{
-					printf("Please read BMP file first.\n");
-					break;
-				}
-				printf("Please input the BMP file name.\n");
-				char FileName[100];
-				scanf("%s", FileName);
-				PrintBMP(FileName, Info, &InfoHeader);
-				printf("Print BMP file successfully.\n");
-				break;
+				// if (!Info)
+				// {
+				// 	printf("Please read BMP file first.\n");
+				// 	break;
+				// }
+				// printf("Please input the BMP file name.\n");
+				// char FileName[100];
+				// scanf("%s", FileName);
+				// PrintBMP(FileName, Info, &InfoHeader);
+				// printf("Print BMP file successfully.\n");
+				// break;
 			}
 			case 3:		// compress BMP file
 			{
-				if (!Info)
+				printf("Please input the BMP file name.\n");
+				string FileName;
+				BMPInfoHeader InfoHeader;
+				unsigned char *Info; 
+				cin >> FileName;
+				if (!(Info = ReadBMP(FileName, &InfoHeader)))
 				{
-					printf("Please read BMP file first.\n");
+					printf("Please try again.\n");	
 					break;
 				}
-				Compress(Info, &InfoHeader);
-				printf("Compress BMP file by DCT successfully.\n");
+				FileName = FileName.substr(0, FileName.length() - 4) + ".JPEG";
+				Compress(Info, FileName, &InfoHeader);
+				printf("Compress BMP file successfully, the file is '%s' .\n", FileName.c_str());
 				break;
 			}
 			case 4:		// decode BMP file
 			{
-				if (!Info)
-				{
-					printf("Please read BMP file first.\n");
-					break;
-				}
-				printf("Please input the compressed file name.\n");
-				char FileName[100];
-				scanf("%s", FileName);
-				Decompress(FileName, "output.bmp", &InfoHeader);
-				printf("Decode BMP file from DCT successfully.\n");
+				printf("Please input the JPEG file name.\n");
+				string FileName;
+				cin >> FileName;
+				string outputFileName = FileName.substr(0, FileName.length() - 5) + "_decompression.bmp";
+				Decompress(FileName, outputFileName);
+				printf("Decode BMP file successfully, the file is '%s'.\n", outputFileName.c_str());
 				break;
 			}
 			// case 5:		// compress BMP file by WT
@@ -107,7 +109,7 @@ int main()
 
 		// system("pause");
 		PrintMenu();
-		scanf("%d", &Menu);
+		cin >> Menu;
 	}
     return 0;
 }

@@ -4,8 +4,8 @@ void TransformRGBToYUV(unsigned char *Info, double *Y, double *U, double *V, int
 void DCT(double *Matrix, int height, int width);
 void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag);
 void ZigzagScan(int *Matrix, int height, int width);
-void RLE(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> > &EC);
-void DPCM(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> > &EC);
+void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC);
+void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC);
 
 // Compression:
 // 1. RGB -> YUV
@@ -16,20 +16,11 @@ void DPCM(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> >
 // 6. RLE
 // 7. DPCM
 // 8. Entropy Coding
-void Compress(unsigned char *Info, BMPInfoHeader *InfoHeader)
+void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader)
 {
     int height = InfoHeader -> biHeight;
     int width = InfoHeader -> biWidth;
     int len = height * width;
-    // open output file
-    FILE *fp = fopen("JPEG.huff", "w");
-    if (fp == NULL)
-    {
-        printf("Error: cannot open output file! \n");
-        return;
-    }
-    // write header
-    fprintf(fp, "%d %d\n", height, width);
     // RGB -> YUV
     printf("RGB -> YUV processing... \n");
     double *Y = (double *)malloc(sizeof(double) * len);
@@ -72,25 +63,25 @@ void Compress(unsigned char *Info, BMPInfoHeader *InfoHeader)
     ZigzagScan(Q_Y, height, width);
     ZigzagScan(Q_U, height / 2, width / 2);
     ZigzagScan(Q_V, height / 2, width / 2);
-        print("encodeQ.test",Q_Y, Q_U, Q_V, height, width, 1);
+        // print("encodeQ.test",Q_Y, Q_U, Q_V, height, width, 1);
     // RLE on AC
     printf("RLE processing... \n");
     vector <pair<int, int> > L_ACEC;    // Y
     vector <pair<int, int> > C_ACEC;    // U + V
-    RLE(fp, Q_Y, height, width, L_ACEC);
-    RLE(fp, Q_U, height / 2, width / 2, C_ACEC);
-    RLE(fp, Q_V, height / 2, width / 2, C_ACEC);
+    RLE(Q_Y, height, width, L_ACEC);
+    RLE(Q_U, height / 2, width / 2, C_ACEC);
+    RLE(Q_V, height / 2, width / 2, C_ACEC);
         // print("encodeRLE.test", Q_Y, Q_U, Q_V, height, width, 1);
     // DPCM on DC
     printf("DPCM processing... \n");
     vector <pair<int, int> > L_DCEC;    // Y
     vector <pair<int, int> > C_DCEC;    // U + V
-    DPCM(fp, Q_Y, height, width, L_DCEC);
-    DPCM(fp, Q_U, height / 2, width / 2, C_DCEC);
-    DPCM(fp, Q_V, height / 2, width / 2, C_DCEC);
+    DPCM(Q_Y, height, width, L_DCEC);
+    DPCM(Q_U, height / 2, width / 2, C_DCEC);
+    DPCM(Q_V, height / 2, width / 2, C_DCEC);
         // print("encodeDPCM.test", Q_Y, Q_U, Q_V, height, width, 1);
     // print to file
-    FILE *huffmanfp = fopen("JPEG.codes", "wb");
+    FILE *huffmanfp = fopen(FileName.c_str(), "wb");
     if (huffmanfp == NULL)
     {
         printf("Error: cannot open huffman codes file! \n");
@@ -112,10 +103,9 @@ void Compress(unsigned char *Info, BMPInfoHeader *InfoHeader)
     printf("Finish compression! \n");
     // free
     free(Q_Y); free(Q_U); free(Q_V);
-    fclose(fp);
 }
 
-void DPCM(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> > &EC)
+void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
 {
     // (size, amplitude)
     int PreviousDC = 0, cnt = 0;
@@ -131,15 +121,13 @@ void DPCM(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> >
                 size ++;
                 absdelta /= 2;
             }
-            fprintf(fp, "(%d,%d)", size, delta);
             EC.push_back(make_pair(size, delta));    
             PreviousDC = CurrentDC;
         }
     }
-    fprintf(fp, "\n");
 }
 
-void RLE(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> > &EC)
+void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
 {
     // ((skip, size), value)
     // (skip << 4 + size, value)
@@ -163,18 +151,13 @@ void RLE(FILE *fp, int *Matrix, int height, int width, vector <pair<int, int> > 
                             size ++;
                             x /= 2;
                         }
-                        fprintf(fp, "((%d,%d),%d)", skipCount, size, Matrix[k]);
                         EC.push_back(make_pair((skipCount << 4) + size, Matrix[k]));
                         skipCount = 0;
                     }
                 }
             if (skipCount > 0)
-            {
-                fprintf(fp, "((0,0),0)");
                 EC.push_back(make_pair(0, 0));
-            }
         }
-    fprintf(fp, "\n");
 }
 
 void ZigzagScan(int *Matrix, int height, int width)
