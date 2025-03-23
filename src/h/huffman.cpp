@@ -1,6 +1,7 @@
 #include "huffman.h"
 
-void generateCodes(HuffmanNode *root, const string &code, map<int, string> &codes) {
+void generateCodes(HuffmanNode *root, const string &code, map<int, string> &codes)
+{
     if (!root)
         return;
     if (!root -> left && !root -> right)        // leaf node
@@ -12,13 +13,15 @@ void generateCodes(HuffmanNode *root, const string &code, map<int, string> &code
     generateCodes(root -> right, code + "1", codes);
 }
 
-void destroyHuffmanTree(HuffmanNode *root) {
+void destroyHuffmanTree(HuffmanNode *root)
+{
     if (!root) return;
-    destroyHuffmanTree(root->left);
-    destroyHuffmanTree(root->right);
+    destroyHuffmanTree(root -> left);
+    destroyHuffmanTree(root -> right);
     delete root;
 }
 
+// sort for Canonical Huffman Codes
 bool cmp(pair<string, int> a, pair<string, int> b)
 { 
     return a.first.size() == b.first.size() ? a.first < b.first : a.first.size() < b.first.size(); 
@@ -26,17 +29,16 @@ bool cmp(pair<string, int> a, pair<string, int> b)
 
 void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, int flag)
 {
-    // (size / skip << 4 + size, amplitude)
-    map<int, int> freqMap;
+    // value = size / skip << 4 + size
+    // (value, amplitude)
+    map<int, int> freqMap;      // value -> freq
     for (int i = 0; i < EC.size(); i ++)
         freqMap[EC[i].first] ++;
-
     // put all symbols into a priority queue
     priority_queue<HuffmanNode*, vector<HuffmanNode*>, compareNode> q;
     map<int, int>::iterator i;
     for (i = freqMap.begin(); i != freqMap.end(); i ++)
         q.push(new HuffmanNode(i -> first, i -> second));
-    
     // only one symbol
     if (q.size() == 1) 
     {
@@ -45,7 +47,7 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
         root -> left = x;
         q.push(root);
     }
-    
+    // multiple symbols
     while (q.size() > 1) 
     {
         HuffmanNode *left = q.top(); q.pop();
@@ -57,7 +59,7 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
     }
     // create Huffman codes
     HuffmanNode *root = q.top();
-    map<int, string> codes;     // HUFFVAL -> code
+    map<int, string> codes;     // value -> code
     generateCodes(root, "", codes);
     // free Huffman tree
     destroyHuffmanTree(root);
@@ -66,12 +68,12 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
     dht.marker = 0xFFC4;
     dht.HTInformation = HTInformation;
     dht.HUFFVAL = (int *)malloc(codes.size() * sizeof(int));
-    // 码长为 i + 1 的码字数目
-    vector <pair<string, int> > v;  // (code, HUFFVAL)
-    map <int, int> bits;            // code -> bits
+    // transform to Canonical Huffman Codes
+    vector <pair<string, int> > v;  // (code, value)
+    map <int, int> bits;            // code -> code bits
     for (int i = 0; i < 16; i ++)
     {
-        int tot_BITSi = 0;
+        int tot_BITSi = 0;          // number of codes whose length == i + 1
         for (map<int, string>::iterator it = codes.begin(); it != codes.end(); it ++)
             if (it -> second.size() == i + 1)
             {
@@ -82,36 +84,26 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
         dht.BITS[i] = tot_BITSi;
     }
     sort(v.begin(), v.end(), cmp);
-    // for (int i = 0; i < v.size(); i ++)
-    //     printf("(%s,%d)", v[i].first.c_str(), v[i].second);
-    // printf("\n");
-    // transform to Canonical Huffman Codes
     int code = 0;
-    map <int, int> CanonicalCodes;  // HUFFVAL -> code
+    map <int, int> CanonicalCodes;  // value -> code (use DEC to represent BIN)
     for (int i = 0; i < v.size(); i ++)
     {
-        if (!i)
-        {
-            CanonicalCodes[v[i].second] = code;
-            continue;
-        }
-        if (v[i].first.size() != v[i - 1].first.size())
-        {
-            code ++;
-            int delta = v[i].first.size() - v[i - 1].first.size();
-            while (delta --)
-                code = code << 1;
-        }
-        else
-            code ++;
+        if (i)
+            if (v[i].first.size() != v[i - 1].first.size())
+            {
+                code ++;
+                int delta = v[i].first.size() - v[i - 1].first.size();
+                while (delta --)
+                    code = code << 1;
+            }
+            else
+                code ++;
         CanonicalCodes[v[i].second] = code;
-    }
-    for (int i = 0; i < v.size(); i ++)
         dht.HUFFVAL[i] = v[i].second;
-    // for (int i = 0; i < v.size(); i ++)
-    //     printf("(%d,%d)", v[i].second, CanonicalCodes[v[i].second]);
+        // printf("(%d,%d)", v[i].second, code);
+    }
     // printf("\n");
-    // get Huffman codes
+    // (value, amplitude) -> (Huffman(value), amplitude)
     // concat 8 bits as a byte
     int bitCount = 0, bytes = 0;
     vector <unsigned char> byte;
@@ -126,8 +118,6 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
             byte.push_back(bytes >> bitCount);
             bytes = bytes & ((1 << bitCount) - 1);
         }
-        // if (i < 10)
-        //     printf("(%d,%d)\n", code, amplitude);
         // 001 -> -6
         // 101 -> 5
         int size = flag == 0 ? EC[i].first : EC[i].first & 15;
@@ -160,13 +150,9 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
     fwrite(dht.BITS, sizeof(unsigned char), 16, fp);
     fwrite(dht.HUFFVAL, sizeof(int), CanonicalCodes.size(), fp);
     // printf("%d %d\n", dht.length, dht.HTInformation);
+    // print bytes
     for (int i = 0; i < byte.size(); i ++)
-    {
-        // if (i == 0)
-        //     printf("%x\n", byte[i]);
         fwrite(&byte[i], sizeof(unsigned char), 1, fp);
-    }
-    // printf("%ld\n", byte.size());
 }
 
 void reconstructHuffman(HuffmanNode *&root, unsigned char *BITS, int *HUFFVAL)

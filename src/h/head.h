@@ -31,10 +31,10 @@ struct BMPInfoHeader {
 
 struct DHTSegment {
     unsigned short marker;  // 0xFFC4
-    unsigned int length;  // 2 + 4 + 1 + 16 + sum(BITS[i]) * sizeof(int) 
+    unsigned int length;    // 2 + 4 + 1 + 16 + sum(BITS[i]) * sizeof(int) + bytes after huffman
     unsigned char HTInformation;    // 00: L_DC, 01: L_AC, 10: C_DC, 11: C_AC
-    unsigned char BITS[16]; // 码长为 i + 1 的码字数目
-    int *HUFFVAL;
+    unsigned char BITS[16]; // sum of codes whose length == i + 1 
+    int *HUFFVAL;           // the value of the code
 };
 
 const int Qtable[2][8][8] = {
@@ -75,8 +75,10 @@ const int ZigzagOrder[64] = {
 
 double alpha(int x);
 
-void print(const char* FileName, double *Y, double *U, double *V, int height, int width, int flag);
+void PrintMenu();
 
+// for debug
+void print(const char* FileName, double *Y, double *U, double *V, int height, int width, int flag);
 void print(const char* FileName, int *Y, int *U, int *V, int height, int width, int flag);
 
 #endif 

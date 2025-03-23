@@ -28,17 +28,17 @@ unsigned char *ReadBMP(string FileName, BMPInfoHeader *InfoHeader)
 	fclose(fp);
 	InfoHeader -> biSizeImage = len;	//update the contents of the InfoHeader
 	// print all the elements of the InfoHeader
-	// printf("biSize: %d\n", InfoHeader -> biSize);
-	// printf("biWidth: %d\n", InfoHeader -> biWidth);
-	// printf("biHeight: %d\n", InfoHeader -> biHeight);
-	// printf("biPlanes: %d\n", InfoHeader -> biPlanes);
-	// printf("biBitCount: %d\n", InfoHeader -> biBitCount);
-	// printf("biCompression: %d\n", InfoHeader -> biCompression);
-	// printf("biSizeImage: %d\n", InfoHeader -> biSizeImage);
-	// printf("biXPelsPerMeter: %d\n", InfoHeader -> biXPelsPerMeter);
-	// printf("biYPelsPerMeter: %d\n", InfoHeader -> biYPelsPerMeter);
-	// printf("biClrUsed: %d\n", InfoHeader -> biClrUsed);
-	// printf("biClrImportant: %d\n", InfoHeader -> biClrImportant);
+		// printf("biSize: %d\n", InfoHeader -> biSize);
+		// printf("biWidth: %d\n", InfoHeader -> biWidth);
+		// printf("biHeight: %d\n", InfoHeader -> biHeight);
+		// printf("biPlanes: %d\n", InfoHeader -> biPlanes);
+		// printf("biBitCount: %d\n", InfoHeader -> biBitCount);
+		// printf("biCompression: %d\n", InfoHeader -> biCompression);
+		// printf("biSizeImage: %d\n", InfoHeader -> biSizeImage);
+		// printf("biXPelsPerMeter: %d\n", InfoHeader -> biXPelsPerMeter);
+		// printf("biYPelsPerMeter: %d\n", InfoHeader -> biYPelsPerMeter);
+		// printf("biClrUsed: %d\n", InfoHeader -> biClrUsed);
+		// printf("biClrImportant: %d\n", InfoHeader -> biClrImportant);
 	return Info;
 }
 

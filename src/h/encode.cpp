@@ -80,6 +80,8 @@ void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader)
     DPCM(Q_U, height / 2, width / 2, C_DCEC);
     DPCM(Q_V, height / 2, width / 2, C_DCEC);
         // print("encodeDPCM.test", Q_Y, Q_U, Q_V, height, width, 1);
+    // free
+    free(Q_Y); free(Q_U); free(Q_V);
     // print to file
     FILE *huffmanfp = fopen(FileName.c_str(), "wb");
     if (huffmanfp == NULL)
@@ -98,11 +100,8 @@ void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader)
     huffman(huffmanfp, C_ACEC, 0x11, 1);
         // printf("%ld %ld %ld %ld\n", L_ACEC.size(), C_ACEC.size(), L_DCEC.size(), C_DCEC.size());
         // printf("%ld %ld %ld %ld\n", L_ACcodes.size(), C_ACcodes.size(), L_DCcodes.size(), C_DCcodes.size());
+    // close file
     fclose(huffmanfp);
-    // finish
-    printf("Finish compression! \n");
-    // free
-    free(Q_Y); free(Q_U); free(Q_V);
 }
 
 void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
@@ -129,7 +128,6 @@ void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
 
 void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
 {
-    // ((skip, size), value)
     // (skip << 4 + size, value)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
@@ -162,6 +160,7 @@ void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
 
 void ZigzagScan(int *Matrix, int height, int width)
 {
+    // 0 -> 1 -> 8 -> ...
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
@@ -179,8 +178,25 @@ void ZigzagScan(int *Matrix, int height, int width)
         }
 }
 
+void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag)
+{
+    // use standard quantization table
+    for (int i = 0; i < height; i += N)
+        for (int j = 0; j < width; j += N)
+        {
+            for (int u = 0; u < N; u ++)
+                for (int v = 0; v < N; v ++)
+                {
+                    int k = (i + u) * width + j + v;
+                    // round
+                    Q_Matrix[k] = Matrix[k] / Qtable[flag][u][v] + (Matrix[k] > 0 ? 0.5 : -0.5);
+                }
+        }
+}
+
 void DCT(double *Matrix, int height, int width)
 {
+    // directly use the formula
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
@@ -203,9 +219,10 @@ void DCT(double *Matrix, int height, int width)
         }
 }
 
-// params from https://blog.csdn.net/weixin_40647819/article/details/92619298
 void TransformRGBToYUV(unsigned char *Info, double *Y, double *U, double *V, int height, int width)
 {
+    // use the formula
+    // let Y, U, V in [-128, 127] for DCT 
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
         {
@@ -217,18 +234,3 @@ void TransformRGBToYUV(unsigned char *Info, double *Y, double *U, double *V, int
         }
 }
 
-void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag)
-{
-    for (int i = 0; i < height; i += N)
-        for (int j = 0; j < width; j += N)
-        {
-            for (int u = 0; u < N; u ++)
-                for (int v = 0; v < N; v ++)
-                {
-                    int k = (i + u) * width + j + v;
-                    // round
-                    Q_Matrix[k] = Matrix[k] / Qtable[flag][u][v] + (Matrix[k] > 0 ? 0.5 : -0.5);
-                    // Q_Matrix[k] = Matrix[k] / Qtable[flag][u][v];
-                }
-        }
-}

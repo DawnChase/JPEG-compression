@@ -6,13 +6,14 @@ void ReverseRLE(vector <pair<int, int> > &RLE, int *AC, int height, int width);
 void ReverseDPCM(vector <pair<int, int> > &DPCM, int *DC, int height, int width);
 void CopyQ(int *AC, int *DC, int *Q, int height, int width);
 void ReverseZigzagScan(int *Matrix, int height, int width);
-void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int height, int width);
 void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag);
 void IDCT(double *Matrix, int height, int width);
+void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int height, int width);
+
 // Decompression:
 // 1. ~Entropy Decoding
-// 2. ~DPCM
-// 3. ~RLE
+// 2. ~RLE
+// 3. ~DPCM
 // 4. ~zigzag
 // 5. Dequantize
 // 6. IDCT
@@ -20,7 +21,7 @@ void IDCT(double *Matrix, int height, int width);
 // 8. YUV -> RGB
 void Decompress(string FileName, string OutputFileName)
 {
-    // open input file
+    // open compressed file
     int height, width;
     FILE *fp = fopen(FileName.c_str(), "rb");
     if (fp == NULL)
@@ -30,8 +31,8 @@ void Decompress(string FileName, string OutputFileName)
     }
     fread(&height, sizeof(int), 1, fp);
     fread(&width, sizeof(int), 1, fp);
-    // printf("Height: %d\n", height);
-    // printf("Width: %d\n", width);
+        // printf("Height: %d\n", height);
+        // printf("Width: %d\n", width);
     // read DHT + ~Huffman
     vector <pair<int, int> > DPCM_Y, DPCM_UV;
     vector <pair<int, int> > RLE_Y, RLE_UV;
@@ -39,6 +40,7 @@ void Decompress(string FileName, string OutputFileName)
     ReverseHuffman(fp, DPCM_UV, 0);
     ReverseHuffman(fp, RLE_Y, 1);
     ReverseHuffman(fp, RLE_UV, 1);
+    fclose(fp);
     // ~RLE
     printf("~RLE processing... \n");
     int *AC_Y = (int *)malloc(sizeof(int) * height * width);
@@ -110,12 +112,11 @@ void Decompress(string FileName, string OutputFileName)
     printf("YUV -> RGB processing... \n");
     unsigned char *Info = (unsigned char *)malloc(sizeof(unsigned char) * height * width * 3);
     TransformYUVToRGB(Info, Y, U, V, height, width);
+    free(Y); free(U); free(V);
     // write to output file
     BMPInfoHeader *InfoHeader = setInfoHeader(height, width);
     PrintBMP(OutputFileName, Info, InfoHeader);
-    free(Y); free(U); free(V);
     free(Info);
-    fclose(fp);
 }
 
 int readDHT(FILE *fp, DHTSegment *dht)
@@ -124,14 +125,10 @@ int readDHT(FILE *fp, DHTSegment *dht)
     fread(&dht -> length, sizeof(int), 1, fp);
     fread(&dht -> HTInformation, sizeof(unsigned char), 1, fp);
     fread(dht -> BITS, sizeof(unsigned char), 16, fp);
-    // printf("%d %d %d\n", dht -> marker, dht -> length, dht -> HTInformation);
+        // printf("%d %d %d\n", dht -> marker, dht -> length, dht -> HTInformation);
     int cnt = 0;
     for (int i = 0; i < 16; i ++)
-    {
         cnt += dht -> BITS[i];
-        // printf("%d ", dht -> BITS[i]);
-    }
-    // printf("\n");
     dht -> HUFFVAL = (int *)malloc(sizeof(int) * cnt);
     fread(dht -> HUFFVAL, sizeof(int), cnt, fp);
     return cnt;
@@ -142,15 +139,15 @@ void ReverseHuffman(FILE *fp, vector <pair<int, int> > &M, int flag)
     // read DHT
     printf("Read DHT... \n");
     DHTSegment *dht = (DHTSegment *)malloc(sizeof(DHTSegment));
-    int cnt = readDHT(fp, dht);
+    int cnt = readDHT(fp, dht);     // number of codes
     // reconstruct Huffman tree
     printf("Reconstruct Huffman tree... \n");
     HuffmanNode *root = new HuffmanNode(-1, 0);
     reconstructHuffman(root, dht -> BITS, dht -> HUFFVAL);
     // decode
-    // printf("%d\n", dht -> length);
     int bytes = (dht -> length - 2 - 4 - 1 - 16 - sizeof(int) * cnt) ;
-    // printf("%d\n", bytes);
+        // printf("%d\n", bytes);
+    // read bytes
     int i = 0, pos = 7;
     unsigned char bit;
     fread(&bit, sizeof(unsigned char), 1, fp);
@@ -168,7 +165,7 @@ void ReverseHuffman(FILE *fp, vector <pair<int, int> > &M, int flag)
             pos --;
             if (pos < 0)
             {
-                if (i == bytes - 1)
+                if (i == bytes - 1)     // the last byte
                 {
                     haltFlag = 1;
                     break;
@@ -189,7 +186,7 @@ void ReverseHuffman(FILE *fp, vector <pair<int, int> > &M, int flag)
             pos --;
             if (pos < 0)
             {
-                if (i == bytes - 1)
+                if (i == bytes - 1)     // the last byte
                 {
                     haltFlag = 1;
                     break;
@@ -203,19 +200,15 @@ void ReverseHuffman(FILE *fp, vector <pair<int, int> > &M, int flag)
         // get the right amplitude (maybe negative)
         if (amplitude < (1 << (size - 1)))
             amplitude = amplitude - (1 << size) + 1;
-        // if (i <= 10)
-        //     printf("(%d,%d)\n", size, amplitude);
         M.push_back(make_pair(p -> symbol, amplitude));
     }
-    // printf("%ld\n", M.size());
 }
 
 void ReverseRLE(vector <pair<int, int> > &RLE, int *AC, int height, int width)
 {
-    // ((skip, size), value)
+    // (skip << 4 + size, value)
     int LastZero = 1;
     vector <pair<int, int> >::iterator it = RLE.begin();
-    // printf("%ld\n", RLE.size());
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
@@ -274,6 +267,7 @@ void ReverseDPCM(vector <pair<int, int> > &DPCM, int *DC, int height, int width)
 
 void CopyQ(int *AC, int *DC, int *Q, int height, int width)
 {
+    // combine AC and DC
     int cnt = 0;
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
@@ -312,6 +306,7 @@ void ReverseZigzagScan(int *Matrix, int height, int width)
 
 void IDCT(double *Matrix, int height, int width)
 {
+    // directly use the formula
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
@@ -335,6 +330,7 @@ void IDCT(double *Matrix, int height, int width)
 
 void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag)
 {
+    // use standard quantization table
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
@@ -352,16 +348,13 @@ double max(double a, double b){return a > b ? a : b;}
 
 void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int height, int width)
 {
+    // remember Y, U, V in [-128, 127]
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
         {
             int k = i * width + j;
-            // printf("YUV: %lf %lf %lf RGB: %lf %lf %lf\n", Y[k], U[k], V[k], 
-            //         Y[k] + 1.772   * (U[k] - 128),
-            //         Y[k] - 0.34414 * (U[k] - 128) - 0.71414 * (V[k] - 128),
-            //         Y[k] + 1.402   * (V[k] - 128));
             Info[3 * k    ] = min(255, max(0, (Y[k] + 128) + 1.772   * U[k]));                          // B
-            Info[3 * k + 1] = min(255, max(0, (Y[k] + 128) - 0.3441  * U[k] - 0.7141 * V[k])); // G
+            Info[3 * k + 1] = min(255, max(0, (Y[k] + 128) - 0.3441  * U[k] - 0.7141 * V[k]));          // G
             Info[3 * k + 2] = min(255, max(0, (Y[k] + 128) + 1.402   * V[k]));                          // R
         }
 }

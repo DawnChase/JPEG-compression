@@ -7,6 +7,13 @@ double alpha(int x)
     return (x == 0 ? sqrt(1.0 / N) : sqrt(2.0 / N));
 }
 
+void PrintMenu()
+{
+    printf("1. Read BMP file.\n");
+    printf("2. Compress BMP file by JPEG(DCT).\n");
+    printf("3. Decode BMP file from JPEG(DCT) and Print it.\n");
+    printf("4. Quit.\n");
+}
 
 void print(const char* FileName, double *Y, double *U, double *V, int height, int width, int flag)
 {
