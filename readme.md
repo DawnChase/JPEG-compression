@@ -1,5 +1,7 @@
 ZJU 2024-2025春夏学期 多媒体技术
 
+选择第二项(Image Compressor)，实现了JPEG压缩，解压缩的整个流程（压缩文件.JPEG并不完全与主流.jpeg一致）
+
 1. Text Compressor (Lossless)
 
     Developing a tool to compress .TXT file based on Huffman, Arithmetic or LZW algorithm.
@@ -24,8 +26,3 @@ ZJU 2024-2025春夏学期 多媒体技术
     - Display the filtered video
 
 4. Other
-
-代码 + 数据 + 实验报告
-
-![alt text](img/image-1.png)
-![alt text](img/image-2.png)
