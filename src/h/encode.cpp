@@ -2,7 +2,7 @@
 
 void TransformRGBToYUV(unsigned char *Info, double *Y, double *U, double *V, int height, int width);
 void DCT(double *Matrix, int height, int width);
-void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag);
+void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag, int qf);
 void ZigzagScan(int *Matrix, int height, int width);
 void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC);
 void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC);
@@ -50,12 +50,15 @@ void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader)
         // print("encodeDCT.test", Y, U, V, height, width, 1);
     // Quantization
     printf("Quantization processing... \n");
+    printf("Please input quality factor (1 ~ 100): ");
+    int qf;
+    scanf("%d", &qf);
     int *Q_Y = (int *)malloc(sizeof(int) * len);
     int *Q_U = (int *)malloc(sizeof(int) * len);
     int *Q_V = (int *)malloc(sizeof(int) * len);
-    Quantize(Y, Q_Y, height, width, 0);
-    Quantize(U, Q_U, height / 2, width / 2, 1);
-    Quantize(V, Q_V, height / 2, width / 2, 1);
+    Quantize(Y, Q_Y, height, width, 0, qf);
+    Quantize(U, Q_U, height / 2, width / 2, 1, qf);
+    Quantize(V, Q_V, height / 2, width / 2, 1, qf);
         // print("encodeQuantize.test", Q_Y, Q_U, Q_V, height, width, 1);
     free(Y); free(U); free(V);
     // zigzag scan
@@ -92,6 +95,7 @@ void Compress(unsigned char *Info, string FileName, BMPInfoHeader *InfoHeader)
     // add height and width 
     fwrite(&height, sizeof(int), 1, huffmanfp);
     fwrite(&width, sizeof(int), 1, huffmanfp);
+    fwrite(&qf, sizeof(int), 1, huffmanfp);
     // Entropy Coding
     printf("Entropy Coding processing... \n");
     huffman(huffmanfp, L_DCEC, 0x00, 0);
@@ -109,11 +113,11 @@ void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
     // (size, amplitude)
     int PreviousDC = 0, cnt = 0;
     for (int i = 0; i < height; i += N)
-    {
         for (int j = 0; j < width; j += N)
         {
             int CurrentDC = Matrix[i * width + j];
             int delta = CurrentDC - PreviousDC;
+            // calc size
             int size = 0, absdelta = abs(delta);
             while (absdelta != 0)
             {
@@ -123,7 +127,6 @@ void DPCM(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
             EC.push_back(make_pair(size, delta));    
             PreviousDC = CurrentDC;
         }
-    }
 }
 
 void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
@@ -132,6 +135,7 @@ void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
+            // check every 8 * 8 block
             int skipCount = 0;
             for (int u = 0; u < N; u ++)
                 for (int v = 0; v < N; v ++)
@@ -144,6 +148,7 @@ void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
                     else
                     {
                         int size = 0, x = abs(Matrix[k]);
+                        // calc size
                         while (x != 0)
                         {
                             size ++;
@@ -153,6 +158,7 @@ void RLE(int *Matrix, int height, int width, vector <pair<int, int> > &EC)
                         skipCount = 0;
                     }
                 }
+            // last (0, 0)
             if (skipCount > 0)
                 EC.push_back(make_pair(0, 0));
         }
@@ -164,6 +170,7 @@ void ZigzagScan(int *Matrix, int height, int width)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
+            // temp block
             int Block[N][N];
             for (int u = 0; u < N; u ++)
                 for (int v = 0; v < N; v ++)
@@ -178,8 +185,9 @@ void ZigzagScan(int *Matrix, int height, int width)
         }
 }
 
-void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag)
+void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag, int qf)
 {
+    double scalingfactor = (qf < 50) ? (50.0 / qf) : (100.0 - qf) / 50.0;
     // use standard quantization table
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
@@ -188,8 +196,10 @@ void Quantize(double *Matrix, int *Q_Matrix, int height, int width, int flag)
                 for (int v = 0; v < N; v ++)
                 {
                     int k = (i + u) * width + j + v;
-                    // round
-                    Q_Matrix[k] = Matrix[k] / Qtable[flag][u][v] + (Matrix[k] > 0 ? 0.5 : -0.5);
+                    if (abs(scalingfactor) < 1e-7)
+                        Q_Matrix[k] = round(Matrix[k]);
+                    else
+                        Q_Matrix[k] = round(Matrix[k] / (Qtable[flag][u][v] * scalingfactor));
                 }
         }
 }
@@ -200,6 +210,7 @@ void DCT(double *Matrix, int height, int width)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
+            // temp block
             double Block[N][N];
             for (int u = 0; u < N; u ++)
                 for (int v = 0; v < N; v ++)

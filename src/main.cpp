@@ -20,14 +20,17 @@ int main()
 				BMPInfoHeader InfoHeader;
 				unsigned char *Info; 
 				cin >> FileName;
+				// read BMP file by FileName
 				if (!(Info = ReadBMP(FileName, &InfoHeader)))
 				{
 					printf("Please try again.\n");	
 					break;
 				}
+				// print BMP file information
 				printf("Read BMP file successfully.\n");
 				printf("Width: %d\n", InfoHeader.biWidth);
 				printf("Height: %d\n", InfoHeader.biHeight);
+				// PrintBMP(FileName.substr(0, FileName.length() - 4) + "_tailored.bmp", Info, &InfoHeader);
 				break;
 			}
 			case 2:		// compress BMP file
@@ -37,12 +40,14 @@ int main()
 				BMPInfoHeader InfoHeader;
 				unsigned char *Info; 
 				cin >> FileName;
+				// read BMP file by FileName
 				if (!(Info = ReadBMP(FileName, &InfoHeader)))
 				{
 					printf("Please try again.\n");	
 					break;
 				}
 				FileName = FileName.substr(0, FileName.length() - 4) + ".JPEG";
+				// Compress BMP file by JPEG
 				Compress(Info, FileName, &InfoHeader);
 				printf("Compress BMP file successfully, the file is '%s' .\n", FileName.c_str());
 				break;
@@ -53,6 +58,7 @@ int main()
 				string FileName;
 				cin >> FileName;
 				string outputFileName = FileName.substr(0, FileName.length() - 5) + "_decompression.bmp";
+				// Decompress JPEG file to BMP
 				Decompress(FileName, outputFileName);
 				printf("Decode BMP file successfully, the file is '%s'.\n", outputFileName.c_str());
 				break;
@@ -63,8 +69,6 @@ int main()
 				break;
 			}
 		}
-
-		// system("pause");
 		PrintMenu();
 		cin >> Menu;
 	}

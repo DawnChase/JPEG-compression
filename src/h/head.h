@@ -6,6 +6,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+// BMP file header
 #pragma pack(2) 
 struct BMPFileHeader {
 	unsigned short bfType;
@@ -15,6 +16,7 @@ struct BMPFileHeader {
 	unsigned int bfOffBits;
 };
 
+// BMP information header
 struct BMPInfoHeader {
 	unsigned int biSize;
 	int biWidth;
@@ -29,6 +31,7 @@ struct BMPInfoHeader {
 	unsigned int biClrImportant;
 };
 
+// DHT
 struct DHTSegment {
     unsigned short marker;  // 0xFFC4
     unsigned int length;    // 2 + 4 + 1 + 16 + sum(BITS[i]) * sizeof(int) + bytes after huffman
@@ -37,6 +40,8 @@ struct DHTSegment {
     int *HUFFVAL;           // the value of the code
 };
 
+// Quantization Table
+// 0: Luminance, 1: Chrominance
 const int Qtable[2][8][8] = {
     // The Luminance Quantization Table
     {   
@@ -62,6 +67,7 @@ const int Qtable[2][8][8] = {
     }
 };
 
+// Zigzag order for 8x8 block
 const int ZigzagOrder[64] = {
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
@@ -73,8 +79,10 @@ const int ZigzagOrder[64] = {
     53, 60, 61, 54, 47, 55, 62, 63
 };
 
+// alpha(x) for DCT
 double alpha(int x);
 
+// print menu
 void PrintMenu();
 
 // for debug

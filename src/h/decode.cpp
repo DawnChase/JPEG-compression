@@ -6,7 +6,7 @@ void ReverseRLE(vector <pair<int, int> > &RLE, int *AC, int height, int width);
 void ReverseDPCM(vector <pair<int, int> > &DPCM, int *DC, int height, int width);
 void CopyQ(int *AC, int *DC, int *Q, int height, int width);
 void ReverseZigzagScan(int *Matrix, int height, int width);
-void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag);
+void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag, int qf);
 void IDCT(double *Matrix, int height, int width);
 void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int height, int width);
 
@@ -22,7 +22,7 @@ void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int
 void Decompress(string FileName, string OutputFileName)
 {
     // open compressed file
-    int height, width;
+    int height, width, qf;
     FILE *fp = fopen(FileName.c_str(), "rb");
     if (fp == NULL)
     {
@@ -31,8 +31,10 @@ void Decompress(string FileName, string OutputFileName)
     }
     fread(&height, sizeof(int), 1, fp);
     fread(&width, sizeof(int), 1, fp);
-        // printf("Height: %d\n", height);
+    fread(&qf, sizeof(int), 1, fp);
         // printf("Width: %d\n", width);
+        // printf("Height: %d\n", height);
+        // printf("Quality factor: %d\n", qf);
     // read DHT + ~Huffman
     vector <pair<int, int> > DPCM_Y, DPCM_UV;
     vector <pair<int, int> > RLE_Y, RLE_UV;
@@ -82,9 +84,9 @@ void Decompress(string FileName, string OutputFileName)
     double *Y = (double *)malloc(sizeof(double) * height * width);
     double *U = (double *)malloc(sizeof(double) * height * width / 4);
     double *V = (double *)malloc(sizeof(double) * height * width / 4);
-    Dequantize(Q_Y, Y, height, width, 0);
-    Dequantize(Q_U, U, height / 2, width / 2, 1);
-    Dequantize(Q_V, V, height / 2, width / 2, 1);
+    Dequantize(Q_Y, Y, height, width, 0, qf);
+    Dequantize(Q_U, U, height / 2, width / 2, 1, qf);
+    Dequantize(Q_V, V, height / 2, width / 2, 1, qf);
         // print("decodeDequantize.test", Y, U, V, height, width, 1);
     free(Q_Y); free(Q_U); free(Q_V);
     // IDCT
@@ -220,8 +222,10 @@ void ReverseRLE(vector <pair<int, int> > &RLE, int *AC, int height, int width)
             }
             int k = i * width + j, x = 0, y = 0;
             AC[k] = 0;    // DC
+            // simulate coordinate transformation
             while ((skip != 0 || value != 0) && (x != N - 1 || y != N - 1))
             {
+                // pad 0
                 for (int t = 0; t < skip; t ++)
                 {
                     if (y == N - 1) x ++, y = 0;
@@ -234,6 +238,7 @@ void ReverseRLE(vector <pair<int, int> > &RLE, int *AC, int height, int width)
                 skip = (it -> first) >> 4, size = (it -> first) & 15, value = it -> second;
                 it ++;
             }
+            // pad the rest 0
             if (x == N - 1 && y == N - 1)
                 LastZero = 0;
             while (x != N - 1 || y != N - 1)
@@ -290,6 +295,7 @@ void ReverseZigzagScan(int *Matrix, int height, int width)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
+            // temp block
             int Block[N][N];
             for (int u = 0; u < N; u ++)
                 for (int v = 0; v < N; v ++)
@@ -310,6 +316,7 @@ void IDCT(double *Matrix, int height, int width)
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
         {
+            // temp block
             double Block[N][N];
             for (int x = 0; x < N; x ++)
                 for (int y = 0; y < N; y ++)
@@ -328,8 +335,10 @@ void IDCT(double *Matrix, int height, int width)
         }
 }
 
-void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag)
+// there's a bug but I don't know where it is and how to fix it
+void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag, int qf)
 {
+    double scalingfactor = (qf < 50) ? (50.0 / qf) : (100.0 - qf) / 50.0;
     // use standard quantization table
     for (int i = 0; i < height; i += N)
         for (int j = 0; j < width; j += N)
@@ -337,8 +346,11 @@ void Dequantize(int *Q_Matrix, double *Matrix, int height, int width, int flag)
             for (int u = 0; u < N; u ++)
                 for (int v = 0; v < N; v ++)
                 {
-                    int k = (i + u) * width + j + v;
-                    Matrix[k] = Q_Matrix[k] * Qtable[flag][u][v];
+                    int k = (i + u) * width + j + v;                    
+                    if (abs(scalingfactor) < 1e-7)
+                        Matrix[k] = Q_Matrix[k];
+                    else
+                        Matrix[k] = Q_Matrix[k] * Qtable[flag][u][v] * scalingfactor;
                 }
         }
 }
@@ -353,6 +365,7 @@ void TransformYUVToRGB(unsigned char *Info, double *Y, double *U, double *V, int
         for (int j = 0; j < width; j++)
         {
             int k = i * width + j;
+            // Ensure the final computed result falls within [0, 255]
             Info[3 * k    ] = min(255, max(0, (Y[k] + 128) + 1.772   * U[k]));                          // B
             Info[3 * k + 1] = min(255, max(0, (Y[k] + 128) - 0.3441  * U[k] - 0.7141 * V[k]));          // G
             Info[3 * k + 2] = min(255, max(0, (Y[k] + 128) + 1.402   * V[k]));                          // R

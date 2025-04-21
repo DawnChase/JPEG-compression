@@ -2,11 +2,13 @@
 
 #define N 8
 
+// alpha for DCT
 double alpha(int x)
 {
     return (x == 0 ? sqrt(1.0 / N) : sqrt(2.0 / N));
 }
 
+// print menu
 void PrintMenu()
 {
     printf("1. Read BMP file.\n");
@@ -15,6 +17,7 @@ void PrintMenu()
     printf("4. Quit.\n");
 }
 
+// print YUV data (double)
 void print(const char* FileName, double *Y, double *U, double *V, int height, int width, int flag)
 {
     FILE *fp = fopen(FileName, "w");
@@ -44,6 +47,7 @@ void print(const char* FileName, double *Y, double *U, double *V, int height, in
     fclose(fp);
 }
 
+// print YUV data (int)
 void print(const char* FileName, int *Y, int *U, int *V, int height, int width, int flag)
 {
     FILE *fp = fopen(FileName, "w");

@@ -4,11 +4,13 @@ void generateCodes(HuffmanNode *root, const string &code, map<int, string> &code
 {
     if (!root)
         return;
-    if (!root -> left && !root -> right)        // leaf node
+    // leaf node
+    if (!root -> left && !root -> right)        
     {
         codes[root -> symbol] = code;
         return;
     }
+    // internal node
     generateCodes(root -> left, code + "0", codes);
     generateCodes(root -> right, code + "1", codes);
 }
@@ -100,9 +102,7 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
                 code ++;
         CanonicalCodes[v[i].second] = code;
         dht.HUFFVAL[i] = v[i].second;
-        // printf("(%d,%d)", v[i].second, code);
     }
-    // printf("\n");
     // (value, amplitude) -> (Huffman(value), amplitude)
     // concat 8 bits as a byte
     int bitCount = 0, bytes = 0;
@@ -149,7 +149,6 @@ void huffman(FILE *fp, vector<pair<int, int> > EC, unsigned char HTInformation, 
     fwrite(&dht.HTInformation, sizeof(unsigned char), 1, fp);
     fwrite(dht.BITS, sizeof(unsigned char), 16, fp);
     fwrite(dht.HUFFVAL, sizeof(int), CanonicalCodes.size(), fp);
-    // printf("%d %d\n", dht.length, dht.HTInformation);
     // print bytes
     for (int i = 0; i < byte.size(); i ++)
         fwrite(&byte[i], sizeof(unsigned char), 1, fp);
@@ -164,6 +163,8 @@ void reconstructHuffman(HuffmanNode *&root, unsigned char *BITS, int *HUFFVAL)
     {
         for (int j = 0; j < BITS[i]; j ++)
         {
+            // from rules to reconstruct
+            // 0: left, 1: right
             HuffmanNode *p = root;
             int x = code ++;
             for (int k = i; k >= 0; k --)
@@ -180,7 +181,6 @@ void reconstructHuffman(HuffmanNode *&root, unsigned char *BITS, int *HUFFVAL)
                     p = p -> left;
                 }
             p -> symbol = HUFFVAL[cnt ++];
-            // printf("(%d,%d)", p -> symbol, code - 1);
         }
         if (cnt > 0)
             code = code << 1;

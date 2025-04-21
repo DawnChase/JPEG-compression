@@ -1,5 +1,6 @@
 #include "bmp.h"
 
+// read a BMP file from filename
 unsigned char *ReadBMP(string FileName, BMPInfoHeader *InfoHeader)
 {
 	BMPFileHeader FileHeader;
@@ -10,38 +11,36 @@ unsigned char *ReadBMP(string FileName, BMPInfoHeader *InfoHeader)
 		return 0;
 	}
 	fread(&FileHeader, sizeof(BMPFileHeader), 1, fp);
+	// check if the file is a BMP file
 	if (FileHeader.bfType != 0x4D42)
 	{
 		printf("It isn't a BMP!!!");
 		return 0;
 	}
 	fread(InfoHeader, sizeof(BMPInfoHeader), 1, fp);
-	int OffsetWidth = (4 - (InfoHeader -> biWidth * 3) % 4) % 4;		//calculate the offset bytes for width
-	int width = (InfoHeader -> biWidth * 3 + OffsetWidth);			    //calculate the total bytes for width
-	int len = InfoHeader -> biHeight * width;
-	unsigned char *Info = (unsigned char*)malloc(sizeof(unsigned char)*len);
+	// pad the image to 16×16 blocks
+	int OffsetWidth = (4 - (InfoHeader -> biWidth * 3) % 4) % 4;
+	int width  = ((InfoHeader -> biWidth - 1) / 16 + 1) * 16;
+	int height = ((InfoHeader -> biHeight - 1) / 16 + 1) * 16; 
+	// calc new SizeImage
+	int len = height * width * 3;
+	unsigned char *Info = (unsigned char *) malloc(sizeof(unsigned char) * len);
+	memset(Info, 0, sizeof(unsigned char) * len);
 	for (int Infoi = 0; Infoi < InfoHeader -> biHeight; Infoi ++)
 	{
-		fread(&(Info[Infoi * width]), 3, InfoHeader -> biWidth, fp);	//read the image for this line
-		fseek(fp, OffsetWidth, SEEK_CUR);							    //change the pointer "fp" to the next line
+		fread(&(Info[Infoi * width * 3]), 3, InfoHeader -> biWidth, fp);	//read the image for this line
+		fseek(fp, OffsetWidth, SEEK_CUR);							    	//change the pointer "fp" to the next line
 	}
 	fclose(fp);
-	InfoHeader -> biSizeImage = len;	//update the contents of the InfoHeader
-	// print all the elements of the InfoHeader
-		// printf("biSize: %d\n", InfoHeader -> biSize);
-		// printf("biWidth: %d\n", InfoHeader -> biWidth);
-		// printf("biHeight: %d\n", InfoHeader -> biHeight);
-		// printf("biPlanes: %d\n", InfoHeader -> biPlanes);
-		// printf("biBitCount: %d\n", InfoHeader -> biBitCount);
-		// printf("biCompression: %d\n", InfoHeader -> biCompression);
-		// printf("biSizeImage: %d\n", InfoHeader -> biSizeImage);
-		// printf("biXPelsPerMeter: %d\n", InfoHeader -> biXPelsPerMeter);
-		// printf("biYPelsPerMeter: %d\n", InfoHeader -> biYPelsPerMeter);
-		// printf("biClrUsed: %d\n", InfoHeader -> biClrUsed);
-		// printf("biClrImportant: %d\n", InfoHeader -> biClrImportant);
+	// reset the InfoHeader
+	InfoHeader -> biWidth = width;
+	InfoHeader -> biHeight = height;
+	InfoHeader -> biSizeImage = len;
+
 	return Info;
 }
 
+// reset BMP Information header
 BMPInfoHeader *setInfoHeader(int height, int width)
 {
 	BMPInfoHeader *InfoHeader = (BMPInfoHeader *)malloc(sizeof(BMPInfoHeader));
@@ -59,6 +58,7 @@ BMPInfoHeader *setInfoHeader(int height, int width)
 	return InfoHeader;
 }
 
+// print BMP file
 void PrintBMP(string FileName, unsigned char *Info, BMPInfoHeader *InfoHeader)
 {
 	BMPFileHeader FileHeader;
@@ -68,15 +68,17 @@ void PrintBMP(string FileName, unsigned char *Info, BMPInfoHeader *InfoHeader)
 		printf("Output File Open unsucceeded!\n");
 		return ;
 	}
-
+	// set the file header
 	FileHeader.bfType = 0x4D42;
 	FileHeader.bfSize = (InfoHeader -> biSizeImage) + sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
 	FileHeader.bfReserve1 = 0;
 	FileHeader.bfReserve2 = 0;
 	FileHeader.bfOffBits = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
-	
+	// print the file header
 	fwrite(&FileHeader, sizeof(BMPFileHeader), 1, fp);
+	// print the information header
 	fwrite(InfoHeader, sizeof(BMPInfoHeader), 1, fp);
-	fwrite(Info,1,InfoHeader -> biSizeImage,fp);
+	// print the image
+	fwrite(Info, 1, InfoHeader -> biSizeImage, fp);
 	fclose(fp);
 }
